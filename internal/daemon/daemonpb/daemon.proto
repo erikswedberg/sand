@@ -145,6 +145,7 @@ message Sandbox {
   GitDetails original_git_details = 24;
   GitDetails current_git_details = 25;
   Container container = 26;
+  repeated int32 host_ports = 27;
 }
 
 message MountSpec {
@@ -317,6 +318,7 @@ message CreateSandboxRequest {
   int32 memory = 13;
   string profile_name = 14;
   repeated string clone_mounts = 15;
+  repeated int32 host_ports = 16;
 }
 
 message CreateSandboxResponse {

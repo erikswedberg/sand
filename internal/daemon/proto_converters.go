@@ -57,6 +57,7 @@ func sandboxToProto(box *sandtypes.Box) *daemonpb.Sandbox {
 		OriginalGitDetails:    gitDetailsToProto(box.OriginalGitDetails),
 		CurrentGitDetails:     gitDetailsToProto(box.CurrentGitDetails),
 		Container:             containerToProto(box.Container),
+		HostPorts:             intsToInt32s(box.HostPorts),
 	}
 }
 
@@ -91,6 +92,7 @@ func sandboxFromProto(box *daemonpb.Sandbox) *sandtypes.Box {
 		OriginalGitDetails:    gitDetailsFromProto(box.GetOriginalGitDetails()),
 		CurrentGitDetails:     gitDetailsFromProto(box.GetCurrentGitDetails()),
 		Container:             containerFromProto(box.GetContainer()),
+		HostPorts:             int32sToInts(box.GetHostPorts()),
 	}
 }
 

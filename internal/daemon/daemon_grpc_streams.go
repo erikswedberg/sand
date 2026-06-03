@@ -137,6 +137,7 @@ func createSandboxOptsToProto(opts CreateSandboxOpts) *daemonpb.CreateSandboxReq
 		Username:       opts.Username,
 		Uid:            opts.Uid,
 		AllowedDomains: append([]string(nil), opts.AllowedDomains...),
+		HostPorts:      intsToInt32s(opts.HostPorts),
 		Mounts:         append([]string(nil), opts.Mounts...),
 		CloneMounts:    append([]string(nil), opts.CloneMounts...),
 		SharedCaches: &daemonpb.SharedCacheConfig{
@@ -162,6 +163,7 @@ func createSandboxOptsFromProto(req *daemonpb.CreateSandboxRequest) CreateSandbo
 		Username:       req.GetUsername(),
 		Uid:            req.GetUid(),
 		AllowedDomains: append([]string(nil), req.GetAllowedDomains()...),
+		HostPorts:      int32sToInts(req.GetHostPorts()),
 		Mounts:         append([]string(nil), req.GetMounts()...),
 		CloneMounts:    append([]string(nil), req.GetCloneMounts()...),
 		CPUs:           int(req.GetCpus()),
@@ -176,4 +178,26 @@ func createSandboxOptsFromProto(req *daemonpb.CreateSandboxRequest) CreateSandbo
 		}
 	}
 	return opts
+}
+
+func intsToInt32s(in []int) []int32 {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]int32, len(in))
+	for i, v := range in {
+		out[i] = int32(v)
+	}
+	return out
+}
+
+func int32sToInts(in []int32) []int {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]int, len(in))
+	for i, v := range in {
+		out[i] = int(v)
+	}
+	return out
 }

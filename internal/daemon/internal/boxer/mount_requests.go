@@ -24,12 +24,12 @@ func (sb *Boxer) prepareMountRequests(ctx context.Context, paths cloning.PathReg
 			return nil, err
 		}
 		requests = append(requests, sandtypes.MountRequest{
-			Kind:     sandtypes.MountKindBind,
+			Kind:     parsed.Type,
 			Original: mount,
 			Source:   parsed.Source,
 			Target:   parsed.Target,
 			ReadOnly: parsed.ReadOnly,
-			Runtime:  renderBindMount(parsed.Source, parsed.Target, parsed.ReadOnly),
+			Runtime:  renderMount(parsed.Type, parsed.Source, parsed.Target, parsed.ReadOnly),
 		})
 	}
 
@@ -49,6 +49,9 @@ func (sb *Boxer) prepareMountRequests(ctx context.Context, paths cloning.PathReg
 		parsed, err := parseBindMountRequest(mount)
 		if err != nil {
 			return nil, err
+		}
+		if parsed.Type != sandtypes.MountKindBind {
+			return nil, fmt.Errorf("clone mount %q must be type=bind", mount)
 		}
 		fi, err := sb.FileOps.Stat(parsed.Source)
 		if err != nil {
@@ -77,7 +80,7 @@ func (sb *Boxer) prepareMountRequests(ctx context.Context, paths cloning.PathReg
 			Clone:    clonePath,
 			Target:   parsed.Target,
 			ReadOnly: parsed.ReadOnly,
-			Runtime:  renderBindMount(clonePath, parsed.Target, parsed.ReadOnly),
+			Runtime:  renderMount(sandtypes.MountKindBind, clonePath, parsed.Target, parsed.ReadOnly),
 		})
 	}
 
@@ -85,13 +88,14 @@ func (sb *Boxer) prepareMountRequests(ctx context.Context, paths cloning.PathReg
 }
 
 type parsedBindMountRequest struct {
+	Type     string
 	Source   string
 	Target   string
 	ReadOnly bool
 }
 
 func parseBindMountRequest(spec string) (parsedBindMountRequest, error) {
-	var ret parsedBindMountRequest
+	ret := parsedBindMountRequest{Type: sandtypes.MountKindBind}
 	if spec == "" {
 		return ret, fmt.Errorf("mount spec is required")
 	}
@@ -101,11 +105,8 @@ func parseBindMountRequest(spec string) (parsedBindMountRequest, error) {
 		if part == "" {
 			return ret, fmt.Errorf("mount %q contains an empty field", spec)
 		}
-		switch part {
-		case "readonly":
+		if part == "readonly" {
 			ret.ReadOnly = true
-			continue
-		case "type=bind":
 			continue
 		}
 
@@ -119,8 +120,15 @@ func parseBindMountRequest(spec string) (parsedBindMountRequest, error) {
 		seen[key] = struct{}{}
 
 		switch key {
+		case "type":
+			switch value {
+			case sandtypes.MountKindBind, sandtypes.MountKindVolume:
+				ret.Type = value
+			default:
+				return ret, fmt.Errorf("mount %q has unsupported type %q (supported: bind, volume)", spec, value)
+			}
 		case "source":
-			ret.Source = expandHomePath(value)
+			ret.Source = value
 		case "target":
 			ret.Target = value
 		default:
@@ -134,20 +142,28 @@ func parseBindMountRequest(spec string) (parsedBindMountRequest, error) {
 	if ret.Target == "" {
 		return ret, fmt.Errorf("mount %q must include target", spec)
 	}
-	if !filepath.IsAbs(ret.Source) {
-		return ret, fmt.Errorf("mount source %q must be absolute", ret.Source)
-	}
 	if !path.IsAbs(ret.Target) {
 		return ret, fmt.Errorf("mount target %q must be absolute", ret.Target)
 	}
-
-	ret.Source = filepath.Clean(ret.Source)
 	ret.Target = path.Clean(ret.Target)
+
+	if ret.Type == sandtypes.MountKindVolume {
+		// Source is a named volume managed by the container runtime, not a
+		// host path. Leave it as-is; the runtime validates the volume name.
+		return ret, nil
+	}
+
+	ret.Source = expandHomePath(ret.Source)
+	if !filepath.IsAbs(ret.Source) {
+		return ret, fmt.Errorf("mount source %q must be absolute", ret.Source)
+	}
+	ret.Source = filepath.Clean(ret.Source)
 	return ret, nil
 }
 
-func renderBindMount(source, target string, readOnly bool) string {
+func renderMount(mountType, source, target string, readOnly bool) string {
 	mount := sandtypes.MountSpec{
+		Type:     mountType,
 		Source:   source,
 		Target:   target,
 		ReadOnly: readOnly,

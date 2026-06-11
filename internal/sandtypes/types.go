@@ -11,8 +11,12 @@ import (
 	"github.com/banksean/sand/internal/applecontainer/types"
 )
 
-// MountSpec describes a bind mount that should be attached to a container.
+// MountSpec describes a bind or volume mount that should be attached to a
+// container. Type is the container runtime mount type: "bind" (default when
+// empty) or "volume". For volume mounts, Source is a named volume managed by
+// the container runtime (`container volume create`) rather than a host path.
 type MountSpec struct {
+	Type     string
 	Source   string
 	Target   string
 	ReadOnly bool
@@ -20,8 +24,12 @@ type MountSpec struct {
 
 // String renders the mount specification into the container runtime format.
 func (m MountSpec) String() string {
+	mountType := m.Type
+	if mountType == "" {
+		mountType = MountKindBind
+	}
 	parts := []string{
-		"type=bind",
+		"type=" + mountType,
 		fmt.Sprintf("source=%s", m.Source),
 		fmt.Sprintf("target=%s", m.Target),
 	}
@@ -32,8 +40,9 @@ func (m MountSpec) String() string {
 }
 
 const (
-	MountKindBind  = "bind"
-	MountKindClone = "clone"
+	MountKindBind   = "bind"
+	MountKindClone  = "clone"
+	MountKindVolume = "volume"
 )
 
 // MountRequest records a user-requested bind mount and the effective runtime

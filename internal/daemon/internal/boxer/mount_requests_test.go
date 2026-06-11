@@ -113,3 +113,19 @@ func mkdirAndStat(t *testing.T, path string) os.FileInfo {
 	}
 	return info
 }
+
+func TestParseBindMountRequestVolume(t *testing.T) {
+	got, err := parseBindMountRequest("type=volume,source=flow-pgdata,target=/var/lib/postgresql/data")
+	if err != nil {
+		t.Fatalf("parseBindMountRequest() error = %v", err)
+	}
+	if got.Type != "volume" || got.Source != "flow-pgdata" || got.Target != "/var/lib/postgresql/data" {
+		t.Fatalf("parseBindMountRequest() = %+v", got)
+	}
+}
+
+func TestParseBindMountRequestUnsupportedType(t *testing.T) {
+	if _, err := parseBindMountRequest("type=tmpfs,source=x,target=/y"); err == nil {
+		t.Fatal("parseBindMountRequest() error = nil, want unsupported type error")
+	}
+}

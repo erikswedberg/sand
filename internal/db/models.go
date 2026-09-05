@@ -68,4 +68,5 @@ type Sandbox struct {
 	MountSpecs            sql.NullString `json:"mount_specs"`
 	ContainerBootstrapped bool           `json:"container_bootstrapped"`
 	SessionArchiveEnabled bool           `json:"session_archive_enabled"`
+	HostPorts             sql.NullString `json:"host_ports"`
 }

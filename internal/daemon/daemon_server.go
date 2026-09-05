@@ -105,6 +105,7 @@ func (d *Daemon) initLifecycle() {
 		ImageService:     d.boxer.ImageService,
 		AgentRegistry:    d.boxer.AgentRegistry,
 		Store:            d.boxer,
+		HostPortManager:  d.boxer.HostPortManager,
 	})
 	d.sessions = sessionarchive.New(d.AppBaseDir, d.boxer.DB())
 }
@@ -629,6 +630,7 @@ type CreateSandboxOpts struct {
 	Uid                  string              `json:"uid,omitempty"`
 
 	AllowedDomains []string                    `json:"allowedDomains,omitempty"`
+	HostPorts      []int                       `json:"hostPorts,omitempty"`
 	Mounts         []string                    `json:"mounts,omitempty"`
 	CloneMounts    []string                    `json:"cloneMounts,omitempty"`
 	SharedCaches   sandtypes.SharedCacheConfig `json:"sharedCaches,omitempty"`
@@ -746,6 +748,7 @@ func (d *Daemon) createSandbox(ctx context.Context, opts CreateSandboxOpts, prog
 		Username:       opts.Username,
 		Uid:            opts.Uid,
 		AllowedDomains: opts.AllowedDomains,
+		HostPorts:      opts.HostPorts,
 		Mounts:         opts.Mounts,
 		CloneMounts:    opts.CloneMounts,
 		SharedCaches:   opts.SharedCaches,

@@ -58,6 +58,7 @@ func sandboxToProto(box *sandtypes.Box) *daemonpb.Sandbox {
 		CurrentGitDetails:     gitDetailsToProto(box.CurrentGitDetails),
 		Container:             containerToProto(box.Container),
 		SessionArchiveEnabled: box.SessionArchiveEnabled,
+		HostPorts:             intsToInt32s(box.HostPorts),
 	}
 }
 
@@ -93,6 +94,7 @@ func sandboxFromProto(box *daemonpb.Sandbox) *sandtypes.Box {
 		CurrentGitDetails:     gitDetailsFromProto(box.GetCurrentGitDetails()),
 		Container:             containerFromProto(box.GetContainer()),
 		SessionArchiveEnabled: box.GetSessionArchiveEnabled(),
+		HostPorts:             int32sToInts(box.GetHostPorts()),
 	}
 }
 

@@ -59,7 +59,8 @@ CREATE TABLE sandboxes (
     profile_name TEXT,
     mount_specs TEXT,
     container_bootstrapped BOOLEAN NOT NULL DEFAULT 1,
-    session_archive_enabled BOOLEAN NOT NULL DEFAULT 0
+    session_archive_enabled BOOLEAN NOT NULL DEFAULT 0,
+    host_ports TEXT
 );
 
 CREATE UNIQUE INDEX idx_active_sandbox_name ON sandboxes(name) WHERE state = 'active';

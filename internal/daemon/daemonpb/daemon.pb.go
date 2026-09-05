@@ -1719,6 +1719,7 @@ type Sandbox struct {
 	CurrentGitDetails     *GitDetails            `protobuf:"bytes,25,opt,name=current_git_details,json=currentGitDetails,proto3" json:"current_git_details,omitempty"`
 	Container             *Container             `protobuf:"bytes,26,opt,name=container,proto3" json:"container,omitempty"`
 	SessionArchiveEnabled bool                   `protobuf:"varint,27,opt,name=session_archive_enabled,json=sessionArchiveEnabled,proto3" json:"session_archive_enabled,omitempty"`
+	HostPorts             []int32                `protobuf:"varint,28,rep,packed,name=host_ports,json=hostPorts,proto3" json:"host_ports,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1940,6 +1941,13 @@ func (x *Sandbox) GetSessionArchiveEnabled() bool {
 		return x.SessionArchiveEnabled
 	}
 	return false
+}
+
+func (x *Sandbox) GetHostPorts() []int32 {
+	if x != nil {
+		return x.HostPorts
+	}
+	return nil
 }
 
 type MountSpec struct {
@@ -3479,6 +3487,7 @@ type CreateSandboxRequest struct {
 	Memory         int32                  `protobuf:"varint,13,opt,name=memory,proto3" json:"memory,omitempty"`
 	ProfileName    string                 `protobuf:"bytes,14,opt,name=profile_name,json=profileName,proto3" json:"profile_name,omitempty"`
 	CloneMounts    []string               `protobuf:"bytes,15,rep,name=clone_mounts,json=cloneMounts,proto3" json:"clone_mounts,omitempty"`
+	HostPorts      []int32                `protobuf:"varint,16,rep,packed,name=host_ports,json=hostPorts,proto3" json:"host_ports,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3614,6 +3623,13 @@ func (x *CreateSandboxRequest) GetProfileName() string {
 func (x *CreateSandboxRequest) GetCloneMounts() []string {
 	if x != nil {
 		return x.CloneMounts
+	}
+	return nil
+}
+
+func (x *CreateSandboxRequest) GetHostPorts() []int32 {
+	if x != nil {
+		return x.HostPorts
 	}
 	return nil
 }
@@ -4284,7 +4300,7 @@ const file_internal_daemon_daemonpb_daemon_proto_rawDesc = "" +
 	"\fStatsRequest\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\tR\x03ids\"E\n" +
 	"\rStatsResponse\x124\n" +
-	"\x05stats\x18\x01 \x03(\v2\x1e.sand.daemon.v1.ContainerStatsR\x05stats\"\xff\b\n" +
+	"\x05stats\x18\x01 \x03(\v2\x1e.sand.daemon.v1.ContainerStatsR\x05stats\"\x9e\t\n" +
 	"\aSandbox\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -4317,7 +4333,9 @@ const file_internal_daemon_daemonpb_daemon_proto_rawDesc = "" +
 	"\x14original_git_details\x18\x18 \x01(\v2\x1a.sand.daemon.v1.GitDetailsR\x12originalGitDetails\x12J\n" +
 	"\x13current_git_details\x18\x19 \x01(\v2\x1a.sand.daemon.v1.GitDetailsR\x11currentGitDetails\x127\n" +
 	"\tcontainer\x18\x1a \x01(\v2\x19.sand.daemon.v1.ContainerR\tcontainer\x126\n" +
-	"\x17session_archive_enabled\x18\x1b \x01(\bR\x15sessionArchiveEnabled\"X\n" +
+	"\x17session_archive_enabled\x18\x1b \x01(\bR\x15sessionArchiveEnabled\x12\x1d\n" +
+	"\n" +
+	"host_ports\x18\x1c \x03(\x05R\thostPorts\"X\n" +
 	"\tMountSpec\x12\x16\n" +
 	"\x06source\x18\x01 \x01(\tR\x06source\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1b\n" +
@@ -4439,7 +4457,7 @@ const file_internal_daemon_daemonpb_daemon_proto_rawDesc = "" +
 	"\x06agents\x18\x03 \x01(\bR\x06agents\x12\x14\n" +
 	"\x05bazel\x18\x04 \x01(\bR\x05bazel\x12\x1d\n" +
 	"\n" +
-	"http_proxy\x18\x05 \x01(\bR\thttpProxy\"\xe2\x03\n" +
+	"http_proxy\x18\x05 \x01(\bR\thttpProxy\"\x81\x04\n" +
 	"\x14CreateSandboxRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x0eclone_from_dir\x18\x02 \x01(\tR\fcloneFromDir\x12\x1d\n" +
@@ -4457,7 +4475,9 @@ const file_internal_daemon_daemonpb_daemon_proto_rawDesc = "" +
 	"\x04cpus\x18\f \x01(\x05R\x04cpus\x12\x16\n" +
 	"\x06memory\x18\r \x01(\x05R\x06memory\x12!\n" +
 	"\fprofile_name\x18\x0e \x01(\tR\vprofileName\x12!\n" +
-	"\fclone_mounts\x18\x0f \x03(\tR\vcloneMounts\"\x83\x01\n" +
+	"\fclone_mounts\x18\x0f \x03(\tR\vcloneMounts\x12\x1d\n" +
+	"\n" +
+	"host_ports\x18\x10 \x03(\x05R\thostPorts\"\x83\x01\n" +
 	"\x15CreateSandboxResponse\x12\x1c\n" +
 	"\bprogress\x18\x01 \x01(\tH\x00R\bprogress\x12+\n" +
 	"\x03box\x18\x02 \x01(\v2\x17.sand.daemon.v1.SandboxH\x00R\x03box\x12\x16\n" +

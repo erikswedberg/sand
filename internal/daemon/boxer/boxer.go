@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/banksean/sand/internal/daemon/lifecycle"
 	"github.com/banksean/sand/internal/db"
 	"github.com/banksean/sand/internal/hostops"
+	"github.com/banksean/sand/internal/hostport"
 	"github.com/banksean/sand/internal/imageprogress"
 	"github.com/banksean/sand/internal/runtimedeps"
 	"github.com/banksean/sand/internal/sandboxlog"
@@ -51,6 +53,7 @@ type Boxer struct {
 	FileOps          hostops.FileOps
 	SSHim            SSHimmer
 	AgentRegistry    *agents.AgentRegistry
+	HostPortManager  *hostport.Manager
 	httpProxyService *HTTPProxyCacheService
 }
 
@@ -111,6 +114,7 @@ func NewBoxerWithDeps(appRoot string, deps BoxerDeps) (*Boxer, error) {
 		FileOps:          deps.FileOps,
 		SSHim:            deps.SSHim,
 		AgentRegistry:    deps.AgentRegistry,
+		HostPortManager:  hostport.NewManager(),
 	}, nil
 }
 
@@ -153,11 +157,15 @@ func NewBoxer(appRoot, localDomain string, terminalWriter io.Writer) (*Boxer, er
 		FileOps:          fileOps,
 		SSHim:            sshim,
 		AgentRegistry:    agentRegistry,
+		HostPortManager:  hostport.NewManager(),
 	}
 	return sb, nil
 }
 
 func (sb *Boxer) Close() error {
+	if sb.HostPortManager != nil {
+		sb.HostPortManager.StopAll()
+	}
 	if sb.sqlDB != nil {
 		return sb.sqlDB.Close()
 	}
@@ -171,6 +179,7 @@ func (sb *Boxer) newLifecycleService() *lifecycle.Service {
 		ImageService:     sb.ImageService,
 		AgentRegistry:    sb.AgentRegistry,
 		Store:            sb,
+		HostPortManager:  sb.HostPortManager,
 	})
 }
 
@@ -266,6 +275,7 @@ type NewSandboxOpts struct {
 	Username       string
 	Uid            string
 	AllowedDomains []string
+	HostPorts      []int
 	Mounts         []string
 	CloneMounts    []string
 	SharedCaches   sandtypes.SharedCacheConfig
@@ -371,6 +381,7 @@ func (sb *Boxer) NewSandbox(ctx context.Context, opts NewSandboxOpts) (*sandtype
 		DNSDomain:             opts.LocalDomain,
 		EnvFile:               envFile,
 		AllowedDomains:        opts.AllowedDomains,
+		HostPorts:             append([]int(nil), opts.HostPorts...),
 		MountRequests:         mountRequests,
 		SharedCacheMounts:     sharedCacheMounts,
 		Mounts:                append(mounts, sshKeysMountSpec),
@@ -615,6 +626,10 @@ func (sb *Boxer) RenameSandbox(ctx context.Context, oldName, newName string, pro
 func (sb *Boxer) SoftDelete(ctx context.Context, sbox *sandtypes.Box) error {
 	ctx = sandboxlog.WithSandboxID(ctx, sbox.ID)
 	slog.InfoContext(ctx, "Boxer.SoftDelete", "id", sbox.ID, "name", sbox.Name)
+
+	if sb.HostPortManager != nil {
+		sb.HostPortManager.StopForSandbox(sbox.ID)
+	}
 
 	out, err := sb.ContainerService.Stop(ctx, nil, sbox.ContainerID)
 	if err != nil {
@@ -925,6 +940,7 @@ func (sb *Boxer) sandboxFromDB(s *db.Sandbox) *sandtypes.Box {
 		DNSDomain:             fromNullString(s.DnsDomain),
 		EnvFile:               fromNullString(s.EnvFile),
 		AllowedDomains:        domainsFromNullString(s.AllowedDomains),
+		HostPorts:             hostPortsFromNullString(s.HostPorts),
 		MountRequests:         mountRequests,
 		OriginalGitDetails: &sandtypes.GitDetails{
 			RemoteOrigin: fromNullString(s.OriginalGitOrigin),
@@ -1010,6 +1026,37 @@ func domainsFromNullString(ns sql.NullString) []string {
 		}
 	}
 	return domains
+}
+
+func hostPortsToNullString(ports []int) sql.NullString {
+	if len(ports) == 0 {
+		return sql.NullString{}
+	}
+	parts := make([]string, 0, len(ports))
+	for _, p := range ports {
+		parts = append(parts, strconv.Itoa(p))
+	}
+	return sql.NullString{String: strings.Join(parts, ","), Valid: true}
+}
+
+func hostPortsFromNullString(ns sql.NullString) []int {
+	if !ns.Valid || ns.String == "" {
+		return nil
+	}
+	var out []int
+	for _, s := range strings.Split(ns.String, ",") {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			slog.Warn("failed to parse host port", "value", s, "error", err)
+			continue
+		}
+		out = append(out, n)
+	}
+	return out
 }
 
 func (sb *Boxer) getContainer(ctx context.Context, containerID string) (*sandtypes.Container, error) {
@@ -1216,6 +1263,7 @@ func (sb *Boxer) SaveSandbox(ctx context.Context, sbox *sandtypes.Box) error {
 		AgentType:             toNullString(sbox.AgentType),
 		ProfileName:           toNullString(sbox.ProfileName),
 		AllowedDomains:        domainsToNullString(sbox.AllowedDomains),
+		HostPorts:             hostPortsToNullString(sbox.HostPorts),
 		MountSpecs:            mountRequestsToNullString(sbox.MountRequests),
 		ContainerBootstrapped: sbox.ContainerBootstrapped,
 		Cpu:                   toNullInt(sbox.CPUs),
@@ -1269,6 +1317,10 @@ func (sb *Boxer) StopContainer(ctx context.Context, sbox *sandtypes.Box) error {
 	ctx = sandboxlog.WithSandboxID(ctx, sbox.ID)
 	if sbox.ContainerID == "" {
 		return fmt.Errorf("sandbox %s has no container ID", sbox.ID)
+	}
+
+	if sb.HostPortManager != nil {
+		sb.HostPortManager.StopForSandbox(sbox.ID)
 	}
 
 	out, err := sb.ContainerService.Stop(ctx, nil, sbox.ContainerID)

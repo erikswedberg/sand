@@ -100,6 +100,7 @@ func (c *OneshotCmd) Run(cctx *CLIContext) error {
 			Agent:          c.Agent,
 			SSHAgent:       c.SSHAgent,
 			AllowedDomains: allowedDomains,
+			HostPorts:      append([]int(nil), c.HostPort...),
 			Mounts:         c.Mount,
 			CloneMounts:    c.CloneMount,
 			SharedCaches:   cctx.SharedCaches,

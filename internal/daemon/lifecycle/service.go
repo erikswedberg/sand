@@ -16,6 +16,7 @@ import (
 	"github.com/banksean/sand/internal/containerruntime"
 	"github.com/banksean/sand/internal/hookscript"
 	"github.com/banksean/sand/internal/hostops"
+	"github.com/banksean/sand/internal/hostport"
 	"github.com/banksean/sand/internal/runtimedeps"
 	"github.com/banksean/sand/internal/runtimepaths"
 	"github.com/banksean/sand/internal/sandboxlog"
@@ -39,6 +40,7 @@ type Service struct {
 	ImageService     hostops.ImageOps
 	AgentRegistry    *agents.AgentRegistry
 	Store            Store
+	HostPortManager  *hostport.Manager
 }
 
 type Deps struct {
@@ -47,6 +49,7 @@ type Deps struct {
 	ImageService     hostops.ImageOps
 	AgentRegistry    *agents.AgentRegistry
 	Store            Store
+	HostPortManager  *hostport.Manager
 }
 
 func NewService(deps Deps) *Service {
@@ -56,6 +59,7 @@ func NewService(deps Deps) *Service {
 		ImageService:     deps.ImageService,
 		AgentRegistry:    deps.AgentRegistry,
 		Store:            deps.Store,
+		HostPortManager:  deps.HostPortManager,
 	}
 }
 
@@ -344,7 +348,10 @@ func (s *Service) StartNewContainer(ctx context.Context, sb *sandtypes.Box, prog
 	if err := s.ExecuteHooks(ctx, sb, hooks, progress); err != nil {
 		return err
 	}
-	return s.Store.UpdateContainerBootstrapped(ctx, sb, true)
+	if err := s.Store.UpdateContainerBootstrapped(ctx, sb, true); err != nil {
+		return err
+	}
+	return s.setupHostPorts(ctx, sb)
 }
 
 func (s *Service) StartExistingContainer(ctx context.Context, sb *sandtypes.Box) error {
@@ -358,7 +365,10 @@ func (s *Service) StartExistingContainer(ctx context.Context, sb *sandtypes.Box)
 		return err
 	}
 
-	return s.ExecuteHooks(ctx, sb, hooks, nil)
+	if err := s.ExecuteHooks(ctx, sb, hooks, nil); err != nil {
+		return err
+	}
+	return s.setupHostPorts(ctx, sb)
 }
 
 func (s *Service) startContainerProcess(ctx context.Context, sandboxID, containerID string) error {

@@ -20,7 +20,7 @@ Running an AI coding agent like Claude Code, Codex, Gemini, or opencode directly
 
 - Apple Silicon Mac
 - macOS 26 or later
-- Apple [`container`](https://github.com/apple/container) CLI version `1.3.1`
+- Apple [`container`](https://github.com/apple/container) CLI version `1.4.1`
 
 ## Quickstart
 
@@ -88,7 +88,6 @@ See [Git remotes between host and sandbox](doc/GIT_REMOTES.md) for the full work
 - [Sandbox profiles](doc/CONFIGURATION.md#profiles)
 - [Non-interactive oneshot runs](doc/ONESHOT.md)
 - [Network filtering](doc/NETWORK_FILTERING.md)
-- [Exposing host services to a sandbox](doc/HOST_SERVICES.md)
 - [Architecture and trade-offs](doc/ARCHITECTURE.md)
 - [Claude Code setup](doc/CLAUDE_CODE_HOWTO.md)
 - [Troubleshooting](doc/TROUBLESHOOTING.md)

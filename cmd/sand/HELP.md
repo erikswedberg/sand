@@ -2,7 +2,7 @@
 
 Manage lightweight linux container sandboxes on MacOS.
 
-Requires apple container CLI: https://github.com/apple/container/releases/tag/1.3.1
+Requires apple container CLI: https://github.com/apple/container/releases/tag/1.4.1
 
 ## Global Flags
 
@@ -82,7 +82,6 @@ sand new [flags] [SANDBOX-NAME]
 - `-e, --env-file` _`<file-path>`_ - legacy env file path used when no default profile is configured (default: `.env`)
 - `--rm` - remove the sandbox after the command terminates
 - `--allowed-domains-file` _`<file-path>`_ - path to allowed-domains.txt file for DNS egress filtering (overrides the init image default)
-- `--host-port` _`<port>`_ - expose a host-loopback TCP port to the sandbox at 127.0.0.1:<port> (repeatable)
 - `--mount` _`<source=...,target=...[,readonly]>`_ - bind mount a host directory (can be specified multiple times)
 - `--clone-mount` _`<source=...,target=...[,readonly]>`_ - copy-on-write clone a host directory and bind mount the clone (can be specified multiple times)
 - `--cpu` _`2`_ - number of CPUs to allocate to the container (default: `2`)
@@ -116,7 +115,6 @@ sand oneshot [flags] <PROMPT>
 - `-e, --env-file` _`<file-path>`_ - legacy env file path used when no default profile is configured (default: `.env`)
 - `--rm` - remove the sandbox after the command terminates
 - `--allowed-domains-file` _`<file-path>`_ - path to allowed-domains.txt file for DNS egress filtering (overrides the init image default)
-- `--host-port` _`<port>`_ - expose a host-loopback TCP port to the sandbox at 127.0.0.1:<port> (repeatable)
 - `--mount` _`<source=...,target=...[,readonly]>`_ - bind mount a host directory (can be specified multiple times)
 - `--clone-mount` _`<source=...,target=...[,readonly]>`_ - copy-on-write clone a host directory and bind mount the clone (can be specified multiple times)
 - `--cpu` _`2`_ - number of CPUs to allocate to the container (default: `2`)
@@ -166,7 +164,6 @@ sand exec [flags] <SANDBOX-NAME> <ARG>...
 - `-e, --env-file` _`<file-path>`_ - legacy env file path used when no default profile is configured (default: `.env`)
 - `--rm` - remove the sandbox after the command terminates
 - `--allowed-domains-file` _`<file-path>`_ - path to allowed-domains.txt file for DNS egress filtering (overrides the init image default)
-- `--host-port` _`<port>`_ - expose a host-loopback TCP port to the sandbox at 127.0.0.1:<port> (repeatable)
 - `--mount` _`<source=...,target=...[,readonly]>`_ - bind mount a host directory (can be specified multiple times)
 - `--clone-mount` _`<source=...,target=...[,readonly]>`_ - copy-on-write clone a host directory and bind mount the clone (can be specified multiple times)
 - `--cpu` _`2`_ - number of CPUs to allocate to the container (default: `2`)
